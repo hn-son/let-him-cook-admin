@@ -1,0 +1,21 @@
+@use '../../styles/variables.scss' as *;
+@use '../../styles/mixins.scss' as *;
+
+.login-container {
+    min-height: 100vh;
+    @include flex-center;
+    background-color: $background-color;
+
+    .login-card {
+        width: 400px;
+        max-width: 90%;
+
+        .login-logo {
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 24px;
+            color: $primary-color;
+        }
+    }
+}

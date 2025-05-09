@@ -1,0 +1,14 @@
+@import '@styles/variables.scss';
+@import '@styles/mixins.scss';
+
+.recipe-list {
+    .page-header {
+        @include flex-between;
+        margin-bottom: 24px;
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+        }
+    }
+}

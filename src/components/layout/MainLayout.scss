@@ -1,0 +1,49 @@
+@use '../../styles/variables.scss' as *;
+@use '../../styles/mixins.scss' as *;
+
+.main-layout {
+    min-height: 100vh;
+
+    .logo {
+        height: 64px;
+        color: white;
+        font-size: 18px;
+        font-weight: bold;
+        @include flex-center;
+        margin: 16px 0;
+    }
+
+    .site-header {
+        background: white;
+        padding: 0 24px;
+        @include flex-between;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        width: 100%;
+
+        .trigger-button {
+            font-size: 18px;
+        }
+
+        .header-right {
+            .user-info {
+                @include flex-center;
+                cursor: pointer;
+
+                .user-name {
+                    margin-right: 8px;
+                }
+            }
+        }
+    }
+
+    .site-content {
+        margin: 24px;
+        padding: 24px;
+        background: white;
+        min-height: 280px;
+        overflow: auto;
+    }
+}

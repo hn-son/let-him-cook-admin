@@ -1,0 +1,42 @@
+@use './variables.scss' as *;
+@use './mixins.scss' as *;
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+        sans-serif;
+    background-color: #f0f2f5;
+    color: rgba(0, 0, 0, 0.85);
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 $content-padding;
+}
+
+.page-header {
+    margin-bottom: 24px;
+
+    h1 {
+        font-size: 24px;
+        font-weight: 500;
+    }
+}
+
+.card {
+    background: white;
+    border-radius: 2px;
+    padding: 24px;
+    @include card-shadow;
+}
+
+.form-actions {
+    @include flex-between;
+    margin-top: 24px;
+}
