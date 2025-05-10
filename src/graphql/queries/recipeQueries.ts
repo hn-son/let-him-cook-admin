@@ -15,6 +15,7 @@ export const GET_RECIPES = gql`
                 unit
             }
             author {
+                id
                 username
             }
         }

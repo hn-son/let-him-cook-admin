@@ -22,7 +22,6 @@ const authLink = setContext((_, { headers }) => {
 const errorLink = onError(({ graphQLErrors, networkError }) => {
     if (graphQLErrors) {
         graphQLErrors.forEach(({ message, extensions }) => {
-            debugger
             if (extensions?.code === 'UNAUTHENTICATED') {
                 // Token không hợp lệ hoặc hết hạn
                 useAuthStore.getState().logout();

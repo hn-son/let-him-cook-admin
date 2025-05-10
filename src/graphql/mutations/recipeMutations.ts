@@ -12,9 +12,7 @@ export const CREATE_RECIPE = gql`
                 unit
             }
             steps
-            author {
-                username
-            }
+            author 
             createdAt
             updatedAt
         }

@@ -1,0 +1,47 @@
+.user-form-modal {
+  .ant-modal-content {
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  .ant-modal-header {
+    border-radius: 8px 8px 0 0;
+    background-color: #f8f9fa;
+    padding: 16px 24px;
+  }
+
+  .ant-modal-body {
+    padding: 24px;
+  }
+
+  .ant-modal-footer {
+    border-radius: 0 0 8px 8px;
+    padding: 16px 24px;
+  }
+
+  .ant-form-item-label > label {
+    font-weight: 500;
+  }
+
+  .site-form-item-icon {
+    color: rgba(0, 0, 0, 0.45);
+  }
+
+  .ant-input-affix-wrapper {
+    &:focus,
+    &-focused {
+      box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+    }
+  }
+
+  .ant-btn-primary {
+    background-color: #1890ff;
+    border-color: #1890ff;
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.045);
+
+    &:hover {
+      background-color: #40a9ff;
+      border-color: #40a9ff;
+    }
+  }
+}

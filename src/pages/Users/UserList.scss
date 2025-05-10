@@ -1,0 +1,36 @@
+.user-list-container {
+  .user-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .user-role {
+    font-weight: bold;
+    
+    &-admin {
+      color: #1890ff;
+    }
+    
+    &-user {
+      color: #52c41a;
+    }
+  }
+
+  .ant-table-wrapper {
+    .ant-table-thead > tr > th {
+      background-color: #f5f5f5;
+      font-weight: 600;
+    }
+    
+    .ant-table-tbody > tr:hover > td {
+      background-color: #e6f7ff;
+    }
+  }
+
+  .action-buttons {
+    display: flex;
+    gap: 8px;
+  }
+}
