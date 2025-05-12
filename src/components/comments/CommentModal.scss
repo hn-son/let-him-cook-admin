@@ -1,0 +1,51 @@
+.comment-modal {
+  .comment-list {
+    max-height: 400px;
+    overflow-y: auto;
+    
+    .comment-item {
+      display: flex;
+      margin-bottom: 16px;
+      
+      .comment-avatar {
+        margin-right: 16px;
+      }
+      
+      .comment-content {
+        flex: 1;
+        
+        .comment-header {
+          display: flex;
+          justify-content: space-between;
+          margin-bottom: 4px;
+          
+          .comment-author {
+            font-weight: 500;
+          }
+          
+          .comment-time {
+            font-size: 12px;
+            color: rgba(0, 0, 0, 0.45);
+          }
+        }
+      }
+    }
+  }
+  
+  .comment-input-container {
+    margin-top: 16px;
+    
+    .comment-textarea {
+      margin-bottom: 16px;
+    }
+    
+    .comment-actions {
+      display: flex;
+      justify-content: flex-end;
+      
+      .cancel-button {
+        margin-right: 8px;
+      }
+    }
+  }
+}

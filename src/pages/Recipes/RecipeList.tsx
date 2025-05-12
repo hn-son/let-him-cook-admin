@@ -1,6 +1,12 @@
 import React, { JSX, useState } from 'react';
 import { Table, Button, Space, Popconfirm, message, Input, Typography } from 'antd';
-import { PlusOutlined, SearchOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import {
+    PlusOutlined,
+    SearchOutlined,
+    EditOutlined,
+    DeleteOutlined,
+    CommentOutlined,
+} from '@ant-design/icons';
 import { useQuery, useMutation } from '@apollo/client';
 import { Link, useNavigate } from 'react-router-dom';
 import { GET_RECIPES } from '../../graphql/queries/recipeQueries';
@@ -11,8 +17,9 @@ import {
 } from '../../graphql/mutations/recipeMutations';
 import useRecipeStore from '../../store/recipeStore';
 import RecipeForm from './RecipeForm';
+import CommentModal from '../../components/comments/CommentModal';
 
-const { Title } = Typography;
+const { Title } = Typography;   
 const { Search } = Input;
 
 const RecipeList = (): JSX.Element => {
@@ -22,6 +29,10 @@ const RecipeList = (): JSX.Element => {
     const [formVisible, setFormVisible] = useState(false);
     const [editingRecipe, setEditingRecipe] = useState<any>(null);
     const { setRecipes, recipes, deleteRecipe, addRecipe, updateRecipe } = useRecipeStore();
+
+    // State cho modal bình luận
+    const [commentsVisible, setCommentsVisible] = useState(false);
+    const [currentRecipe, setCurrentRecipe] = useState<any>(null);
 
     const { loading } = useQuery(GET_RECIPES, {
         onCompleted: data => {
@@ -54,19 +65,19 @@ const RecipeList = (): JSX.Element => {
 
     const handleCreate = async (values: any) => {
         try {
-            await createRecipeMutation({variables: {input: values}})
+            await createRecipeMutation({ variables: { input: values } });
         } catch (error) {
             console.error(error);
         }
-    }
+    };
 
     const handleUpdate = async (values: any) => {
         try {
-            await updateRecipeMutation({variables: {input: values}})
+            await updateRecipeMutation({ variables: { input: values } });
         } catch (error) {
             console.error(error);
         }
-    }
+    };
 
     const [deleteRecipeMutation] = useMutation(DELETE_RECIPE, {
         onCompleted: () => {
@@ -103,6 +114,30 @@ const RecipeList = (): JSX.Element => {
     const handleFormCancel = () => {
         setFormVisible(false);
         setEditingRecipe(null);
+    };
+
+    // Hàm xử lý hiển thị modal bình luận
+    const showComments = (recipe: any) => {
+        setCurrentRecipe(recipe);
+        setCommentsVisible(true);
+    };
+
+    // Hàm đóng modal bình luận
+    const handleCommentsCancel = () => {
+        setCommentsVisible(false);
+        setCurrentRecipe(null);
+    };
+
+    // Hàm xử lý thêm bình luận (sẽ được triển khai sau khi có API)
+    const handleAddComment = async (content: string, recipeId: string) => {
+        // Đây là nơi để gọi API thêm bình luận trong tương lai
+        console.log('Adding comment:', content, 'for recipe:', recipeId);
+        // Giả lập delay của API call
+        return new Promise<void>(resolve => {
+            setTimeout(() => {
+                resolve();
+            }, 1000);
+        });
     };
 
     const columns = [
@@ -144,6 +179,13 @@ const RecipeList = (): JSX.Element => {
                     >
                         Sửa
                     </Button>
+                    <Button
+                        type="default"
+                        icon={<CommentOutlined />}
+                        onClick={() => showComments(record)}
+                    >
+                        Bình luận
+                    </Button>
                     <Popconfirm
                         title="Are you  sure want to delete this"
                         onConfirm={() => handleDelete(record.id)}
@@ -156,6 +198,28 @@ const RecipeList = (): JSX.Element => {
                     </Popconfirm>
                 </Space>
             ),
+        },
+    ];
+
+    // Dữ liệu bình luận mẫu (sau này sẽ được lấy từ API)
+    const sampleComments = [
+        {
+            author: 'Người dùng 1',
+            avatar: 'https://api.dicebear.com/7.x/miniavs/svg?seed=1',
+            content: 'Công thức này rất ngon, tôi đã thử làm và thành công!',
+            datetime: '2023-10-15 14:30',
+        },
+        {
+            author: 'Người dùng 2',
+            avatar: 'https://api.dicebear.com/7.x/miniavs/svg?seed=2',
+            content: 'Tôi thấy công thức này hơi phức tạp, có cách nào đơn giản hơn không?',
+            datetime: '2023-10-16 09:45',
+        },
+        {
+            author: 'Người dùng 3',
+            avatar: 'https://api.dicebear.com/7.x/miniavs/svg?seed=3',
+            content: 'Tôi đã thay thế một số nguyên liệu và vẫn rất ngon!',
+            datetime: '2023-10-17 18:20',
         },
     ];
 
@@ -193,6 +257,18 @@ const RecipeList = (): JSX.Element => {
                 onSubmit={editingRecipe ? handleUpdate : handleCreate}
                 loading={createLoading || updateLoading}
             />
+
+            {/* Sử dụng component CommentModal */}
+            {currentRecipe && (
+                <CommentModal
+                    visible={commentsVisible}
+                    title={`Bình luận cho: ${currentRecipe.title}`}
+                    onCancel={handleCommentsCancel}
+                    recipeId={currentRecipe.id}
+                    comments={sampleComments}
+                    onAddComment={handleAddComment}
+                />
+            )}
         </div>
     );
 };
