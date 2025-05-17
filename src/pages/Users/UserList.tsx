@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Table, Button, Space, Modal, message, Card, Typography, Tooltip } from 'antd';
+import { Table, Button, Space, Modal, message, Card, Typography, Tooltip, Popconfirm } from 'antd';
 import {
     EditOutlined,
     DeleteOutlined,
@@ -174,14 +174,20 @@ const UserList: React.FC = () => {
                         </Button>
                     </Tooltip>
                     <Tooltip title="Xóa">
-                        <Button
-                            danger
-                            icon={<DeleteOutlined />}
-                            loading={deleteLoading}
-                            onClick={() => showDeleteConfirm(record)}
+                        <Popconfirm
+                            title="Bạn có chắc chắn muốn xóa người dùng này?"
+                            onConfirm={() => handleDeleteUser(record.id)}
+                            okText="Xóa"
+                            cancelText="Hủy"
                         >
-                            Xóa
-                        </Button>
+                            <Button
+                                danger
+                                icon={<DeleteOutlined />}
+                                loading={deleteLoading}
+                            >
+                                Xóa
+                            </Button>
+                        </Popconfirm>
                     </Tooltip>
                 </div>
             ),

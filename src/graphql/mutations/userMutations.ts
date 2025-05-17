@@ -1,19 +1,20 @@
 import { gql } from '@apollo/client';
 
 export const CREATE_USER = gql`
-    mutation register($input: UserInput!) {
-        token,
-        user {
-            id
-            username
-            email
+    mutation CreateUser($input: RegisterInput!) {
+        register(input: $input) {
+            token
+            user {
+                id
+                username
+                email
+            }
         }
     }
-`
-
+`;
 
 export const UPDATE_USER = gql`
-    mutation UpdateUser($id: ID!, $input: UserInput!) {
+    mutation UpdateUser($id: ID!, $input: UpdateUserInput!) {
         updateUser(id: $id, input: $input) {
             id
             username
@@ -22,13 +23,13 @@ export const UPDATE_USER = gql`
             createdAt
         }
     }
-`
+`;
 
 export const DELETE_USER = gql`
     mutation DeleteUser($id: ID!) {
         deleteUser(id: $id) {
-            id
-            username
+            success
+            message 
         }
     }
-`
+`;
