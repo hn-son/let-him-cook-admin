@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { LOGIN } from '../../graphql/mutations/authMutations';
 import useAuthStore from '../../store/authStore';
 import './Login.scss';
+import { useMessage } from '../../components/provider/MessageProvider';
 
 interface LoginFormValues {
     email: string;
@@ -16,7 +17,7 @@ const Login = (): JSX.Element => {
     const navigate = useNavigate();
     const { login } = useAuthStore();
     const [loginMutation, { loading }] = useMutation(LOGIN);
-    const [messageApi, contextHolder] = message.useMessage();
+    const messageApi = useMessage();
 
     const onFinish = async (values: LoginFormValues) => {
         try {
@@ -27,10 +28,10 @@ const Login = (): JSX.Element => {
             if (data?.login) {
                 const { token, user } = data.login;
                 login(user, token);
-                messageApi.success('Login successful');
+                messageApi.success('Đăng nhập thành công');
                 navigate('/');
             } else {
-                messageApi.error('Login failed');
+                messageApi.error('Đăng nhập thất bại. Sai thông tin đăng nhập');
             }
 
         } catch (error: any) {
@@ -41,7 +42,6 @@ const Login = (): JSX.Element => {
 
     return (
         <div className="login-container">
-            {contextHolder}
             <Card className="login-card">
                 <div className="login-logo">Let Him Cook Admin</div>
                 <Form
@@ -52,17 +52,17 @@ const Login = (): JSX.Element => {
                 >
                     <Form.Item
                         name="email"
-                        rules={[{ required: true, message: 'Please input your email!' }]}
+                        rules={[{ required: true, message: 'Hãy nhập email!' }]}
                     >
                         <Input prefix={<UserOutlined />} placeholder="Email" size="large" />
                     </Form.Item>
                     <Form.Item
                         name="password"
-                        rules={[{ required: true, message: 'Please input your password!' }]}
+                        rules={[{ required: true, message: 'Hãy nhập mật khẩu!' }]}
                     >
                         <Input.Password
                             prefix={<LockOutlined />}
-                            placeholder="Password"
+                            placeholder="Mật khẩu"
                             size="large"
                         />
                     </Form.Item>
@@ -75,7 +75,7 @@ const Login = (): JSX.Element => {
                             block
                             size="large"
                         >
-                            Log in
+                            Đăng nhập
                         </Button>
                     </Form.Item>
                 </Form>

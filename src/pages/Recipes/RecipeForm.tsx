@@ -6,7 +6,6 @@ import {
     Upload,
     Space,
     Divider,
-    message,
     Modal,
     InputNumber,
     Select,
@@ -37,8 +36,7 @@ import {
     deleteImageByPath,
     uploadImageToFirebaseWithPath,
 } from '../../utils/firebaseStorage';
-import getBase64 from '../../utils/getBase64';
-import { get } from 'http';
+import { useMessage } from '../../components/provider/MessageProvider';
 
 interface RecipeFormValues {
     initialValues?: any;
@@ -93,6 +91,7 @@ const RecipeForm: React.FC<RecipeFormValues> = ({
     const [originalImageUrl, setOriginalImageUrl] = useState<string>('');
     const [fileList, setFileList] = useState<UploadFile[]>([]);
     console.log('fileList:', fileList);
+    const messageApi = useMessage();
 
     useEffect(() => {
         if (visible) {
@@ -177,11 +176,11 @@ const RecipeForm: React.FC<RecipeFormValues> = ({
             ]);
 
             onSuccess(result.url);
-            message.success('Upload ảnh thành công!');
+            messageApi.success('Upload ảnh thành công!');
         } catch (error) {
             console.error('Upload error:', error);
             onError(error);
-            message.error('Upload ảnh thất bại!');
+            messageApi.error('Upload ảnh thất bại!');
         } finally {
             setUploadLoading(false);
         }
@@ -199,14 +198,14 @@ const RecipeForm: React.FC<RecipeFormValues> = ({
                 await deleteImageByPath(uploadedImagePath);
                 setUploadedImagePath('');
                 setUploadImageUrl(originalImageUrl); // Quay về ảnh gốc nếu có
-                message.success('Đã xóa ảnh');
+                messageApi.success('Đã xóa ảnh');
             } else {
                 setUploadImageUrl(''); // Xóa hoàn toàn nếu không có ảnh gốc
             }
             return true;
         } catch (error) {
             console.error('Error removing image:', error);
-            message.error('Có lỗi khi xóa ảnh');
+            messageApi.error('Có lỗi khi xóa ảnh');
             return false;
         }
     };
@@ -323,13 +322,13 @@ const RecipeForm: React.FC<RecipeFormValues> = ({
                         beforeUpload={file => {
                             const isImage = file.type.startsWith('image/');
                             if (!isImage) {
-                                message.error('Bạn chỉ có thể tải lên hình ảnh!');
+                                messageApi.error('Bạn chỉ có thể tải lên hình ảnh!');
                             }
 
                             const isLt5M = file.size / 1024 / 1024 < 5;
 
                             if (!isLt5M) {
-                                message.error('Hình ảnh phải nhỏ hơn 5MB!');
+                                messageApi.error('Hình ảnh phải nhỏ hơn 5MB!');
                             }
 
                             return isImage && isLt5M;

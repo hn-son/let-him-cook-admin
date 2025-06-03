@@ -18,13 +18,14 @@ import {
 import useRecipeStore from '../../store/recipeStore';
 import RecipeForm from './RecipeForm';
 import CommentModal from '../../components/comments/CommentModal';
+import { useMessage } from '../../components/provider/MessageProvider';
 
 const { Title } = Typography;   
 const { Search } = Input;
 
 const RecipeList = (): JSX.Element => {
     const navigate = useNavigate();
-    const [messageApi, contextHolder] = message.useMessage();
+    const messageApi = useMessage();
     const [searchText, setSearchText] = useState('');
     const [formVisible, setFormVisible] = useState(false);
     const [editingRecipe, setEditingRecipe] = useState<any>(null);
@@ -222,7 +223,6 @@ const RecipeList = (): JSX.Element => {
 
     return (
         <div className="recipe-list">
-            {contextHolder}
             <div className="page-header">
                 <Title level={2}>Danh sách món ăn</Title>
                 <div className="header-actions">
@@ -244,6 +244,9 @@ const RecipeList = (): JSX.Element => {
                 rowKey="id"
                 loading={loading}
                 pagination={{ pageSize: 10 }}
+                locale={{
+                    emptyText: 'Không có dữ liệu',
+                }}
             />
 
             <RecipeForm

@@ -7,39 +7,42 @@ import client from './graphql/client';
 import routes from './config/routes';
 import ProtectedRoute from './components/common/ProtectedRoute';
 import './styles/global.scss';
+import { MessageProvider } from './components/provider/MessageProvider';
 
 const App: React.FC = () => {
     return (
         <ApolloProvider client={client}>
-            <Router>
-                <Suspense
-                    fallback={
-                        <div className="loading-container">
-                            <Spin size="large" />
-                        </div>
-                    }
-                >
-                    <Routes>
-                        {routes.map(route => (
-                            <Route
-                                key={route.path}
-                                path={route.path}
-                                element={
-                                    route.protected ? (
-                                        <ProtectedRoute>
+            <MessageProvider>
+                <Router>
+                    <Suspense
+                        fallback={
+                            <div className="loading-container">
+                                <Spin size="large" />
+                            </div>
+                        }
+                    >
+                        <Routes>
+                            {routes.map(route => (
+                                <Route
+                                    key={route.path}
+                                    path={route.path}
+                                    element={
+                                        route.protected ? (
+                                            <ProtectedRoute>
+                                                <route.component />
+                                            </ProtectedRoute>
+                                        ) : (
                                             <route.component />
-                                        </ProtectedRoute>
-                                    ) : (
-                                        <route.component />
-                                    )
-                                }
-                            />
-                        ))}
-                    </Routes>
-                </Suspense>
-            </Router>
+                                        )
+                                    }
+                                />
+                            ))}
+                        </Routes>
+                    </Suspense>
+                </Router>
+            </MessageProvider>
         </ApolloProvider>
     );
 };
 
-export default App
+export default App;
