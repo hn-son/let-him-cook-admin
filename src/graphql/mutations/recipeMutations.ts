@@ -12,7 +12,8 @@ export const CREATE_RECIPE = gql`
                 unit
             }
             steps
-            author 
+            difficulty
+            cookingTime
             createdAt
             updatedAt
         }
@@ -20,15 +21,20 @@ export const CREATE_RECIPE = gql`
 `;
 
 export const UPDATE_RECIPE = gql`
-    mutation UpdateRecipe($id: ID!, $input: RecipeInput!) {
+    mutation UpdateRecipe($id: ID!, $input: RecipeUpdateInput!) {
         updateRecipe(id: $id, input: $input) {
             id
             title
             description
-            ingredients
+            ingredients {
+                name
+                quantity
+                unit
+            }
             steps
             imageUrl
-            author            
+            difficulty
+            cookingTime
             createdAt
             updatedAt
         }

@@ -43,7 +43,7 @@ const RecipeList = (): JSX.Element => {
     const [createRecipeMutation, { loading: createLoading }] = useMutation(CREATE_RECIPE, {
         onCompleted: data => {
             addRecipe(data.createRecipe);
-            messageApi.success('Recipe created successfully');
+            messageApi.success('Tạo công thức thành công');
             setFormVisible(false);
         },
         onError: error => {
@@ -54,7 +54,7 @@ const RecipeList = (): JSX.Element => {
     const [updateRecipeMutation, { loading: updateLoading }] = useMutation(UPDATE_RECIPE, {
         onCompleted: data => {
             updateRecipe(data.updateRecipe.id, data.updateRecipe);
-            messageApi.success('Recipe updated successfully');
+            messageApi.success('Cập nhật công thức thành công');
             setFormVisible(false);
             setEditingRecipe(null);
         },
@@ -71,9 +71,9 @@ const RecipeList = (): JSX.Element => {
         }
     };
 
-    const handleUpdate = async (values: any) => {
+    const handleUpdate = async (values: any ) => {
         try {
-            await updateRecipeMutation({ variables: { input: values } });
+            await updateRecipeMutation({ variables: { id: values.id,input: values } });
         } catch (error) {
             console.error(error);
         }
@@ -116,19 +116,16 @@ const RecipeList = (): JSX.Element => {
         setEditingRecipe(null);
     };
 
-    // Hàm xử lý hiển thị modal bình luận
     const showComments = (recipe: any) => {
         setCurrentRecipe(recipe);
         setCommentsVisible(true);
     };
 
-    // Hàm đóng modal bình luận
     const handleCommentsCancel = () => {
         setCommentsVisible(false);
         setCurrentRecipe(null);
     };
 
-    // Hàm xử lý thêm bình luận (sẽ được triển khai sau khi có API)
     const handleAddComment = async (content: string, recipeId: string) => {
         // Đây là nơi để gọi API thêm bình luận trong tương lai
         console.log('Adding comment:', content, 'for recipe:', recipeId);

@@ -30,7 +30,15 @@ import {
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import type { UploadFile } from 'antd';
+import type { UploadFile, UploadProps } from 'antd';
+import {
+    uploadImageToFirebase,
+    deleteImageFromFirebase,
+    deleteImageByPath,
+    uploadImageToFirebaseWithPath,
+} from '../../utils/firebaseStorage';
+import getBase64 from '../../utils/getBase64';
+import { get } from 'http';
 
 interface RecipeFormValues {
     initialValues?: any;
@@ -78,7 +86,13 @@ const RecipeForm: React.FC<RecipeFormValues> = ({
     visible,
     onCancel,
 }) => {
+    console.log('initialValues:', initialValues);
     const [form] = Form.useForm();
+    const [uploadLoaing, setUploadLoading] = useState(false);
+    const [uploadedImageUrl, setUploadImageUrl] = useState<string>('');
+    const [originalImageUrl, setOriginalImageUrl] = useState<string>('');
+    const [fileList, setFileList] = useState<UploadFile[]>([]);
+    console.log('fileList:', fileList);
 
     useEffect(() => {
         if (visible) {
@@ -123,20 +137,89 @@ const RecipeForm: React.FC<RecipeFormValues> = ({
                 steps: preparedSteps,
                 ingredients: preparedIngredients,
             });
+            if (initialValues?.imageUrl) {
+                setFileList([
+                    {
+                        uid: '-1',
+                        name: 'img.png',
+                        status: 'done',
+                        url: initialValues?.imageUrl,
+                    },
+                ]);
+            }
         }
     }, [form, visible, initialValues]);
 
-    const [fileList, setFileList] = useState<UploadFile[]>(
-        initialValues?.imageUrl
-            ? [{ uid: '-1', name: 'img.png', status: 'done', url: initialValues?.imageUrl }]
-            : []
-    );
+    const [uploadedImagePath, setUploadedImagePath] = useState<string>(''); // Thêm state để lưu path
+
+    const customUpload = async ({ file, onSuccess, onError }: any) => {
+        try {
+            setUploadLoading(true);
+
+            // Xóa ảnh cũ nếu có
+            if (uploadedImagePath) {
+                await deleteImageByPath(uploadedImagePath);
+            }
+
+            // Upload ảnh mới và lưu cả URL và path
+            const result = await uploadImageToFirebaseWithPath(file);
+            setUploadImageUrl(result.url);
+            setUploadedImagePath(result.path); // Lưu path để xóa sau này
+
+            // Cập nhật fileList với URL mới
+            setFileList([
+                {
+                    uid: file.uid,
+                    name: file.name,
+                    status: 'done',
+                    url: result.url,
+                },
+            ]);
+
+            onSuccess(result.url);
+            message.success('Upload ảnh thành công!');
+        } catch (error) {
+            console.error('Upload error:', error);
+            onError(error);
+            message.error('Upload ảnh thất bại!');
+        } finally {
+            setUploadLoading(false);
+        }
+    };
+
+    const handleUploadChange: UploadProps['onChange'] = ({ fileList: newFileList }) => {
+        console.log('New file list:', newFileList);
+        setFileList(newFileList);
+    };
+
+    const handleRemoveImage = async (file: UploadFile) => {
+        try {
+            // Xóa bằng path thay vì URL
+            if (uploadedImagePath) {
+                await deleteImageByPath(uploadedImagePath);
+                setUploadedImagePath('');
+                setUploadImageUrl(originalImageUrl); // Quay về ảnh gốc nếu có
+                message.success('Đã xóa ảnh');
+            } else {
+                setUploadImageUrl(''); // Xóa hoàn toàn nếu không có ảnh gốc
+            }
+            return true;
+        } catch (error) {
+            console.error('Error removing image:', error);
+            message.error('Có lỗi khi xóa ảnh');
+            return false;
+        }
+    };
+
+    const handlePreview = async (file: UploadFile) => {
+        if (!file.response) return;
+        window.open(file.response, '_blank');
+    };
 
     const handleSubmit = async () => {
         try {
             const values = await form.validateFields();
 
-            // Đảm bảo dữ liệu đúng định dạng trước khi submit
             const cleanedIngredients =
                 values.ingredients?.map((ingredient: any) => ({
                     name: ingredient.name,
@@ -146,11 +229,13 @@ const RecipeForm: React.FC<RecipeFormValues> = ({
 
             const formData = {
                 ...values,
-                imageUrl: fileList.length > 0 ? fileList[0].url : null,
+                imageUrl: fileList.length > 0 ? fileList[0].response : '',
                 ingredients: cleanedIngredients,
-                // Đảm bảo steps là mảng các string
                 steps: Array.isArray(values.steps) ? values.steps : [],
+                id: initialValues?.id || null,
             };
+
+            console.log('Form Data:', formData);
 
             await onSubmit(formData);
             form.resetFields();
@@ -160,17 +245,14 @@ const RecipeForm: React.FC<RecipeFormValues> = ({
         }
     };
 
-    const handleCancel = () => {
+    const handleCancel = async () => {
         form.resetFields();
         setFileList([]);
+        setUploadImageUrl('');
+        setUploadedImagePath('');
+        setOriginalImageUrl('');
         onCancel();
     };
-
-    const handleUploadChange = ({ fileList }: any) => {
-        setFileList(fileList);
-    };
-
-    const customUpload = async ({ file, onSuccess }: any) => {};
 
     const sensors = useSensors(
         useSensor(PointerSensor),
@@ -198,6 +280,13 @@ const RecipeForm: React.FC<RecipeFormValues> = ({
         { value: 'hard', label: 'Khó' },
     ];
 
+    const uploadButton = (
+        <div>
+            <PlusOutlined />
+            <div style={{ marginTop: 8 }}>Tải lên</div>
+        </div>
+    );
+
     return (
         <Modal
             title={title}
@@ -220,6 +309,34 @@ const RecipeForm: React.FC<RecipeFormValues> = ({
                     rules={[{ required: true, message: 'Vui lòng nhập tên' }]}
                 >
                     <Input placeholder="Nhập tên công thức" />
+                </Form.Item>
+                <Form.Item label="Ảnh đại diện">
+                    <Upload
+                        listType="picture-card"
+                        fileList={fileList}
+                        customRequest={customUpload}
+                        onChange={handleUploadChange}
+                        onRemove={handleRemoveImage}
+                        onPreview={handlePreview}
+                        maxCount={1}
+                        accept="image/*"
+                        beforeUpload={file => {
+                            const isImage = file.type.startsWith('image/');
+                            if (!isImage) {
+                                message.error('Bạn chỉ có thể tải lên hình ảnh!');
+                            }
+
+                            const isLt5M = file.size / 1024 / 1024 < 5;
+
+                            if (!isLt5M) {
+                                message.error('Hình ảnh phải nhỏ hơn 5MB!');
+                            }
+
+                            return isImage && isLt5M;
+                        }}
+                    >
+                        {fileList.length >= 1 ? null : uploadButton}
+                    </Upload>
                 </Form.Item>
                 <Row gutter={16}>
                     <Col span={12}>
@@ -256,7 +373,6 @@ const RecipeForm: React.FC<RecipeFormValues> = ({
                 <Divider orientation="left">Danh sách nguyên liệu</Divider>
                 <Form.List name="ingredients">
                     {(field, { add, remove }) => {
-                        console.log({ field });
                         return (
                             <>
                                 {field.map(({ key, name, ...restField }) => (
@@ -360,7 +476,10 @@ const RecipeForm: React.FC<RecipeFormValues> = ({
                                                     return { value };
                                                 }}
                                             >
-                                                <Input placeholder="Nhập bước thực hiện" addonBefore={`Bước ${index + 1}`} />
+                                                <Input
+                                                    placeholder="Nhập bước thực hiện"
+                                                    addonBefore={`Bước ${index + 1}`}
+                                                />
                                             </Form.Item>
                                             <MinusCircleOutlined
                                                 onClick={() => remove(name)}
@@ -387,5 +506,4 @@ const RecipeForm: React.FC<RecipeFormValues> = ({
         </Modal>
     );
 };
-
 export default RecipeForm;

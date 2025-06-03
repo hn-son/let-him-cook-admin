@@ -9,6 +9,7 @@ export const GET_RECIPES = gql`
             cookingTime
             difficulty
             createdAt
+            imageUrl
             ingredients {
                 name
                 quantity
