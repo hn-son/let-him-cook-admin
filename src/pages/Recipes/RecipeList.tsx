@@ -34,6 +34,7 @@ const RecipeList = (): JSX.Element => {
     // State cho modal bình luận
     const [commentsVisible, setCommentsVisible] = useState(false);
     const [currentRecipe, setCurrentRecipe] = useState<any>(null);
+    console.log({currentRecipe})
 
     const { loading } = useQuery(GET_RECIPES, {
         onCompleted: data => {
