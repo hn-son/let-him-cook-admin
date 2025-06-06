@@ -40,11 +40,14 @@ const RecipeList = (): JSX.Element => {
     const [isSearching, setIsSearching] = useState(false);
     const [searchResults, setSearchResults] = useState<any[]>([]);
 
+    console.log({searchResults})
+
     // Main query to get all recipes
     const { loading: loadingAllRecipes, refetch: refetchAllRecipes } = useQuery(GET_RECIPES, {
         variables: { search: null, limit: 20, offset: 0 },
         onCompleted: data => {
             setRecipes(data.recipes);
+            // Always update searchResults when not actively searching
             if (!isSearching) {
                 setSearchResults(data.recipes);
             }
@@ -91,6 +94,13 @@ const RecipeList = (): JSX.Element => {
         };
     }, [searchText, debouncedSearch]);
 
+    // Initialize searchResults when recipes change and not searching
+    useEffect(() => {
+        if (!isSearching && recipes.length > 0) {
+            setSearchResults(recipes);
+        }
+    }, [recipes, isSearching]);
+
     // Search handlers
     const handleSearch = (value: string) => {
         setSearchText(value);
@@ -99,7 +109,7 @@ const RecipeList = (): JSX.Element => {
     const handleClearSearch = () => {
         setSearchText('');
         setIsSearching(false);
-        setSearchResults(recipes);
+        setSearchResults(recipes); // Use current recipes from store
     };
 
     // Mutations
@@ -111,6 +121,9 @@ const RecipeList = (): JSX.Element => {
 
             if (isSearching && searchText.trim()) {
                 debouncedSearch(searchText);
+            } else {
+                // Update searchResults immediately if not searching
+                setSearchResults(prev => [...prev, data.createRecipe]);
             }
         },
         onError: error => {
@@ -127,6 +140,13 @@ const RecipeList = (): JSX.Element => {
 
             if (isSearching && searchText.trim()) {
                 debouncedSearch(searchText);
+            } else {
+                // Update searchResults immediately if not searching
+                setSearchResults(prev => 
+                    prev.map(recipe => 
+                        recipe.id === data.updateRecipe.id ? data.updateRecipe : recipe
+                    )
+                );
             }
         },
         onError: error => {
