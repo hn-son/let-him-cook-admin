@@ -3,8 +3,10 @@ import { Modal, List, Avatar, Typography, Divider, Input, Button, Skeleton, Spin
 import { UserOutlined, LoadingOutlined } from '@ant-design/icons';
 import './CommentModal.scss';
 import { GET_COMMENTS } from '../../graphql/queries/commentQueries';
-import { useQuery } from '@apollo/client';
+import { ADD_COMMENT } from '../../graphql/mutations/commentMutations';
+import { useQuery, useMutation } from '@apollo/client';
 import { useMessage } from '../provider/MessageProvider';
+import formatDate from '../../utils/formatDate';
 
 const { Text, Paragraph } = Typography;
 const { TextArea } = Input;
@@ -31,9 +33,9 @@ const CommentItem = ({ author, avatar, content, datetime, loading = false }: any
             />
             <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <Text strong>{author}</Text>
+                    <Text strong>{author.username || ''}</Text>
                     <Text type="secondary" style={{ fontSize: '12px' }}>
-                        {datetime}
+                        {formatDate(datetime)}
                     </Text>
                 </div>
                 <Paragraph style={{ marginTop: 4 }}>{content}</Paragraph>
@@ -60,7 +62,6 @@ const CommentModal: React.FC<CommentModalProps> = ({
     onAddComment,
 }) => {
     const [commentText, setCommentText] = useState('');
-    const [submitting, setSubmitting] = useState(false);
     const [comments, setComments] = useState<any[]>([]);
     const messageApi = useMessage();
 
@@ -79,6 +80,45 @@ const CommentModal: React.FC<CommentModalProps> = ({
         },
     });
 
+    const [addCommentMutation, { loading: submitting }] = useMutation(ADD_COMMENT, {
+        onCompleted: data => {
+            console.log('data', data);
+            messageApi.success('Bình luận đã được thêm thành công');
+            setCommentText('');
+            const newComment = data.addComment;
+
+            setComments(prev => [newComment, ...prev]);
+        },
+        onError: error => {
+            console.error('Error adding comment:', error);
+            messageApi.error('Không thể thêm bình luận. Vui lòng thử lại sau.');
+        },
+        update: (cache, { data }) => {
+            try {
+                const existingComments = cache.readQuery({
+                    query: GET_COMMENTS,
+
+                    variables: {
+                        recipeId,
+                    },
+                });
+
+                if (existingComments) {
+                    cache.writeQuery({
+                        query: GET_COMMENTS,
+                        variables: { recipeId },
+                        data: {
+                            recipeComments: [
+                                data.addComment,
+                                ...(existingComments as any).recipeComments,
+                            ],
+                        },
+                    });
+                }
+            } catch (error) {}
+        },
+    });
+
     // Hàm xử lý thêm bình luận
     const handleAddComment = async () => {
         if (!commentText.trim()) {
@@ -86,22 +126,21 @@ const CommentModal: React.FC<CommentModalProps> = ({
             return;
         }
 
-        if (onAddComment && recipeId) {
-            setSubmitting(true);
-            try {
-                await onAddComment(commentText, recipeId);
-                setCommentText('');
-                messageApi.success('Bình luận đã được thêm thành công');
-            } catch (error) {
-                console.error('Error adding comment:', error);
-                messageApi.error('Không thể thêm bình luận. Vui lòng thử lại sau.');
-            } finally {
-                setSubmitting(false);
-            }
-        } else {
-            // Fallback khi chưa có API
-            messageApi.success('Chức năng thêm bình luận sẽ được phát triển sau');
-            setCommentText('');
+        if (!recipeId) {
+            messageApi.error('Không tìm thấy công thức để bình luận');
+            return;
+        }
+
+        try {
+            await addCommentMutation({
+                variables: {
+                    recipeId,
+                    content: commentText.trim(),
+                },
+            });
+        } catch (error) {
+            console.error('Error adding comment:', error);
+            messageApi.error('Không thể thêm bình luận. Vui lòng thử lại sau.');
         }
     };
 
@@ -190,7 +229,7 @@ const CommentModal: React.FC<CommentModalProps> = ({
                                     author={item.author}
                                     avatar={item.avatar}
                                     content={item.content}
-                                    datetime={item.datetime}
+                                    datetime={item.createdAt}
                                 />
                             )}
                             locale={{

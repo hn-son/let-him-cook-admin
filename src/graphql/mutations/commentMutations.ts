@@ -5,7 +5,12 @@ export const ADD_COMMENT = gql`
         addComment(recipeId: $recipeId, content: $content) {
             id
             content
-            author
+            author {
+                username
+                id
+                email
+                role
+            }
             createdAt
         }
     }

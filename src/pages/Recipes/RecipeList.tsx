@@ -19,6 +19,7 @@ import useRecipeStore from '../../store/recipeStore';
 import RecipeForm from './RecipeForm';
 import CommentModal from '../../components/comments/CommentModal';
 import { useMessage } from '../../components/provider/MessageProvider';
+import formatDate from '../../utils/formatDate';
 
 const { Title } = Typography;   
 const { Search } = Input;
@@ -156,13 +157,7 @@ const RecipeList = (): JSX.Element => {
             title: 'Thời gian tạo',
             dataIndex: 'createdAt',
             key: 'createdAt',
-            render: (text: string) => {
-                const date = new Date(Number(text));
-                // Format as DD/MM/YYYY
-                return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1)
-                    .toString()
-                    .padStart(2, '0')}/${date.getFullYear()}`;
-            },
+            render: formatDate,
             sorter: (a: any, b: any) =>
                 new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
         },
@@ -266,7 +261,6 @@ const RecipeList = (): JSX.Element => {
                     title={`Bình luận cho: ${currentRecipe.title}`}
                     onCancel={handleCommentsCancel}
                     recipeId={currentRecipe.id}
-                    comments={sampleComments}
                     onAddComment={handleAddComment}
                 />
             )}
