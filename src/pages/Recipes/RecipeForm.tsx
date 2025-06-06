@@ -84,13 +84,8 @@ const RecipeForm: React.FC<RecipeFormValues> = ({
     visible,
     onCancel,
 }) => {
-    console.log('initialValues:', initialValues);
     const [form] = Form.useForm();
-    const [uploadLoaing, setUploadLoading] = useState(false);
-    const [uploadedImageUrl, setUploadImageUrl] = useState<string>('');
-    const [originalImageUrl, setOriginalImageUrl] = useState<string>('');
     const [fileList, setFileList] = useState<UploadFile[]>([]);
-    console.log('fileList:', fileList);
     const messageApi = useMessage();
 
     useEffect(() => {
@@ -187,7 +182,6 @@ const RecipeForm: React.FC<RecipeFormValues> = ({
     };
 
     const handleUploadChange: UploadProps['onChange'] = ({ fileList: newFileList }) => {
-        console.log('New file list:', newFileList);
         setFileList(newFileList);
     };
 
@@ -196,11 +190,7 @@ const RecipeForm: React.FC<RecipeFormValues> = ({
             // Xóa bằng path thay vì URL
             if (uploadedImagePath) {
                 await deleteImageByPath(uploadedImagePath);
-                setUploadedImagePath('');
-                setUploadImageUrl(originalImageUrl); // Quay về ảnh gốc nếu có
-                messageApi.success('Đã xóa ảnh');
-            } else {
-                setUploadImageUrl(''); // Xóa hoàn toàn nếu không có ảnh gốc
+                setUploadedImagePath('');                messageApi.success('Đã xóa ảnh');
             }
             return true;
         } catch (error) {
@@ -234,8 +224,6 @@ const RecipeForm: React.FC<RecipeFormValues> = ({
                 id: initialValues?.id || null,
             };
 
-            console.log('Form Data:', formData);
-
             await onSubmit(formData);
             form.resetFields();
             setFileList([]);
@@ -247,9 +235,7 @@ const RecipeForm: React.FC<RecipeFormValues> = ({
     const handleCancel = async () => {
         form.resetFields();
         setFileList([]);
-        setUploadImageUrl('');
         setUploadedImagePath('');
-        setOriginalImageUrl('');
         onCancel();
     };
 

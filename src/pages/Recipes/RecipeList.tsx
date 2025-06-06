@@ -1,14 +1,14 @@
-import React, { JSX, useState } from 'react';
-import { Table, Button, Space, Popconfirm, message, Input, Typography } from 'antd';
+import React, { JSX, useCallback, useEffect, useState } from 'react';
+import { Table, Button, Space, Popconfirm, Input, Typography } from 'antd';
 import {
     PlusOutlined,
     SearchOutlined,
     EditOutlined,
     DeleteOutlined,
     CommentOutlined,
+    ClearOutlined,
 } from '@ant-design/icons';
-import { useQuery, useMutation } from '@apollo/client';
-import { Link, useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useLazyQuery } from '@apollo/client';
 import { GET_RECIPES } from '../../graphql/queries/recipeQueries';
 import {
     DELETE_RECIPE,
@@ -20,34 +20,98 @@ import RecipeForm from './RecipeForm';
 import CommentModal from '../../components/comments/CommentModal';
 import { useMessage } from '../../components/provider/MessageProvider';
 import formatDate from '../../utils/formatDate';
+import { debounce } from 'lodash';
 
-const { Title } = Typography;   
+const { Title } = Typography;
 const { Search } = Input;
 
 const RecipeList = (): JSX.Element => {
-    const navigate = useNavigate();
     const messageApi = useMessage();
     const [searchText, setSearchText] = useState('');
     const [formVisible, setFormVisible] = useState(false);
     const [editingRecipe, setEditingRecipe] = useState<any>(null);
     const { setRecipes, recipes, deleteRecipe, addRecipe, updateRecipe } = useRecipeStore();
 
-    // State cho modal bình luận
+    // Comment modal state
     const [commentsVisible, setCommentsVisible] = useState(false);
     const [currentRecipe, setCurrentRecipe] = useState<any>(null);
-    console.log({currentRecipe})
 
-    const { loading } = useQuery(GET_RECIPES, {
+    // Search state
+    const [isSearching, setIsSearching] = useState(false);
+    const [searchResults, setSearchResults] = useState<any[]>([]);
+
+    // Main query to get all recipes
+    const { loading: loadingAllRecipes, refetch: refetchAllRecipes } = useQuery(GET_RECIPES, {
+        variables: { search: null, limit: 20, offset: 0 },
         onCompleted: data => {
             setRecipes(data.recipes);
+            if (!isSearching) {
+                setSearchResults(data.recipes);
+            }
+        },
+        onError: error => {
+            messageApi.error(`Không thể tải danh sách công thức: ${error.message}`);
         },
     });
 
+    // Lazy query for search
+    const [searchRecipes, { loading: loadingSearch }] = useLazyQuery(GET_RECIPES, {
+        onCompleted: data => {
+            setSearchResults(data.recipes);
+            setIsSearching(true);
+        },
+        onError: error => {
+            messageApi.error(`Không thể tìm kiếm công thức: ${error.message}`);
+        },
+        fetchPolicy: 'network-only',
+    });
+
+    // Debounced search function
+    const debouncedSearch = useCallback(
+        debounce((searchTerm: string) => {
+            if (searchTerm.trim()) {
+                searchRecipes({
+                    variables: {
+                        search: searchTerm.trim(),
+                        limit: 20,
+                        offset: 0,
+                    },
+                });
+            } else {
+                handleClearSearch();
+            }
+        }, 500),
+        [searchRecipes]
+    );
+
+    useEffect(() => {
+        debouncedSearch(searchText);
+        return () => {
+            debouncedSearch.cancel();
+        };
+    }, [searchText, debouncedSearch]);
+
+    // Search handlers
+    const handleSearch = (value: string) => {
+        setSearchText(value);
+    };
+
+    const handleClearSearch = () => {
+        setSearchText('');
+        setIsSearching(false);
+        setSearchResults(recipes);
+    };
+
+    // Mutations
     const [createRecipeMutation, { loading: createLoading }] = useMutation(CREATE_RECIPE, {
         onCompleted: data => {
             addRecipe(data.createRecipe);
             messageApi.success('Tạo công thức thành công');
             setFormVisible(false);
+
+            if (isSearching && searchText.trim()) {
+                debouncedSearch(searchText);
+            }
         },
         onError: error => {
             messageApi.error(`Failed to create recipe: ${error.message}`);
@@ -60,27 +124,15 @@ const RecipeList = (): JSX.Element => {
             messageApi.success('Cập nhật công thức thành công');
             setFormVisible(false);
             setEditingRecipe(null);
+
+            if (isSearching && searchText.trim()) {
+                debouncedSearch(searchText);
+            }
         },
         onError: error => {
             messageApi.error(`Failed to update recipe: ${error.message}`);
         },
     });
-
-    const handleCreate = async (values: any) => {
-        try {
-            await createRecipeMutation({ variables: { input: values } });
-        } catch (error) {
-            console.error(error);
-        }
-    };
-
-    const handleUpdate = async (values: any ) => {
-        try {
-            await updateRecipeMutation({ variables: { id: values.id,input: values } });
-        } catch (error) {
-            console.error(error);
-        }
-    };
 
     const [deleteRecipeMutation] = useMutation(DELETE_RECIPE, {
         onCompleted: () => {
@@ -91,19 +143,34 @@ const RecipeList = (): JSX.Element => {
         },
     });
 
-    const handleDelete = async (id: string) => {
+    // CRUD handlers
+    const handleCreate = async (values: any) => {
         try {
-            await deleteRecipeMutation({ variables: { id } });
-            deleteRecipe(id);
+            await createRecipeMutation({ variables: { input: values } });
         } catch (error) {
             console.error(error);
         }
     };
 
-    const filteredRecipes = recipes.filter(recipe =>
-        recipe.title.toLowerCase().includes(searchText.toLowerCase())
-    );
+    const handleUpdate = async (values: any) => {
+        try {
+            await updateRecipeMutation({ variables: { id: values.id, input: values } });
+        } catch (error) {
+            console.error(error);
+        }
+    };
 
+    const handleDelete = async (id: string) => {
+        try {
+            await deleteRecipeMutation({ variables: { id } });
+            deleteRecipe(id);
+            setSearchResults(prev => prev.filter(recipe => recipe.id !== id));
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    // Form handlers
     const showCreateForm = () => {
         setEditingRecipe(null);
         setFormVisible(true);
@@ -119,6 +186,7 @@ const RecipeList = (): JSX.Element => {
         setEditingRecipe(null);
     };
 
+    // Comment handlers
     const showComments = (recipe: any) => {
         setCurrentRecipe(recipe);
         setCommentsVisible(true);
@@ -129,17 +197,11 @@ const RecipeList = (): JSX.Element => {
         setCurrentRecipe(null);
     };
 
-    const handleAddComment = async (content: string, recipeId: string) => {
-        // Đây là nơi để gọi API thêm bình luận trong tương lai
-        console.log('Adding comment:', content, 'for recipe:', recipeId);
-        // Giả lập delay của API call
-        return new Promise<void>(resolve => {
-            setTimeout(() => {
-                resolve();
-            }, 1000);
-        });
+    const handleRefresh = () => {
+        refetchAllRecipes();
     };
 
+    // Table columns
     const columns = [
         {
             title: 'Tên',
@@ -181,7 +243,7 @@ const RecipeList = (): JSX.Element => {
                         Bình luận
                     </Button>
                     <Popconfirm
-                        title="Are you  sure want to delete this"
+                        title="Are you sure want to delete this"
                         onConfirm={() => handleDelete(record.id)}
                         okText="Yes"
                         cancelText="No"
@@ -195,39 +257,38 @@ const RecipeList = (): JSX.Element => {
         },
     ];
 
-    // Dữ liệu bình luận mẫu (sau này sẽ được lấy từ API)
-    const sampleComments = [
-        {
-            author: 'Người dùng 1',
-            avatar: 'https://api.dicebear.com/7.x/miniavs/svg?seed=1',
-            content: 'Công thức này rất ngon, tôi đã thử làm và thành công!',
-            datetime: '2023-10-15 14:30',
-        },
-        {
-            author: 'Người dùng 2',
-            avatar: 'https://api.dicebear.com/7.x/miniavs/svg?seed=2',
-            content: 'Tôi thấy công thức này hơi phức tạp, có cách nào đơn giản hơn không?',
-            datetime: '2023-10-16 09:45',
-        },
-        {
-            author: 'Người dùng 3',
-            avatar: 'https://api.dicebear.com/7.x/miniavs/svg?seed=3',
-            content: 'Tôi đã thay thế một số nguyên liệu và vẫn rất ngon!',
-            datetime: '2023-10-17 18:20',
-        },
-    ];
+    const loading = loadingAllRecipes || loadingSearch;
 
     return (
         <div className="recipe-list">
             <div className="page-header">
-                <Title level={2}>Danh sách món ăn</Title>
+                <Title level={2}>
+                    Danh sách món ăn{' '}
+                    {isSearching && (
+                        <span style={{ fontSize: '16px', color: '#666', marginLeft: '16px' }}>
+                            ({searchResults.length} kết quả cho "{searchText}")
+                        </span>
+                    )}
+                </Title>
                 <div className="header-actions">
                     <Search
                         placeholder="Tìm kiếm công thức theo tên, nguyên liệu"
                         allowClear
-                        onChange={e => setSearchText(e.target.value)}
+                        value={searchText}
+                        onChange={e => handleSearch(e.target.value)}
+                        onSearch={handleSearch}
+                        loading={loadingSearch}
                         style={{ width: 250, marginRight: 16 }}
                     />
+                    <Button
+                        type="default"
+                        icon={<SearchOutlined />}
+                        onClick={handleRefresh}
+                        loading={loading}
+                        style={{ marginRight: 16 }}
+                    >
+                        Làm mới
+                    </Button>
                     <Button type="primary" icon={<PlusOutlined />} onClick={showCreateForm}>
                         Thêm công thức món ăn
                     </Button>
@@ -236,12 +297,19 @@ const RecipeList = (): JSX.Element => {
 
             <Table
                 columns={columns}
-                dataSource={filteredRecipes}
+                dataSource={searchResults}
                 rowKey="id"
                 loading={loading}
-                pagination={{ pageSize: 10 }}
+                pagination={{
+                    pageSize: 10,
+                    showSizeChanger: true,
+                    showQuickJumper: true,
+                    showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} công thức`,
+                }}
                 locale={{
-                    emptyText: 'Không có dữ liệu',
+                    emptyText: isSearching
+                        ? `Không tìm thấy công thức nào với từ khóa "${searchText}"`
+                        : 'Không có dữ liệu',
                 }}
             />
 
@@ -254,17 +322,16 @@ const RecipeList = (): JSX.Element => {
                 loading={createLoading || updateLoading}
             />
 
-            {/* Sử dụng component CommentModal */}
             {currentRecipe && (
                 <CommentModal
                     visible={commentsVisible}
                     title={`Bình luận cho: ${currentRecipe.title}`}
                     onCancel={handleCommentsCancel}
                     recipeId={currentRecipe.id}
-                    onAddComment={handleAddComment}
                 />
             )}
         </div>
     );
 };
+
 export default RecipeList;

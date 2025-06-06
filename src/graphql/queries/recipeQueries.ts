@@ -1,8 +1,8 @@
 import { gql } from '@apollo/client';
 
 export const GET_RECIPES = gql`
-    query GetRecipes {
-        recipes {
+    query GetRecipes($search: String, $limit: Int, $offset: Int) {
+        recipes(search: $search, limit: $limit, offset: $offset) {
             id
             title
             description

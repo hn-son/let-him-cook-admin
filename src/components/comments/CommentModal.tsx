@@ -71,7 +71,6 @@ const CommentModal: React.FC<CommentModalProps> = ({
         variables: { recipeId },
         skip: !visible || !recipeId,
         onCompleted: data => {
-            console.log('data', data);
             setComments(data.recipeComments || []);
         },
         onError: error => {
@@ -82,7 +81,6 @@ const CommentModal: React.FC<CommentModalProps> = ({
 
     const [addCommentMutation, { loading: submitting }] = useMutation(ADD_COMMENT, {
         onCompleted: data => {
-            console.log('data', data);
             messageApi.success('Bình luận đã được thêm thành công');
             setCommentText('');
             const newComment = data.addComment;
