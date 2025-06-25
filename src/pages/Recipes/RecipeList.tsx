@@ -21,6 +21,7 @@ import CommentModal from '../../components/comments/CommentModal';
 import { useMessage } from '../../components/provider/MessageProvider';
 import formatDate from '../../utils/formatDate';
 import { debounce } from 'lodash';
+import authStore from '../../store/authStore'
 
 const { Title } = Typography;
 const { Search } = Input;
@@ -31,6 +32,9 @@ const RecipeList = (): JSX.Element => {
     const [formVisible, setFormVisible] = useState(false);
     const [editingRecipe, setEditingRecipe] = useState<any>(null);
     const { setRecipes, recipes, deleteRecipe, addRecipe, updateRecipe } = useRecipeStore();
+    const currentUser = authStore((state) => state.user);
+    const isAdmin = currentUser?.role === 'admin';
+    const currentUserId = currentUser?.id || '';
 
     // Comment modal state
     const [commentsVisible, setCommentsVisible] = useState(false);
@@ -46,6 +50,7 @@ const RecipeList = (): JSX.Element => {
     const { loading: loadingAllRecipes, refetch: refetchAllRecipes } = useQuery(GET_RECIPES, {
         variables: { search: null, limit: 20, offset: 0 },
         onCompleted: data => {
+            debugger
             setRecipes(data.recipes);
             // Always update searchResults when not actively searching
             if (!isSearching) {
@@ -60,6 +65,7 @@ const RecipeList = (): JSX.Element => {
     // Lazy query for search
     const [searchRecipes, { loading: loadingSearch }] = useLazyQuery(GET_RECIPES, {
         onCompleted: data => {
+            debugger
             setSearchResults(data.recipes);
             setIsSearching(true);
         },
@@ -95,11 +101,11 @@ const RecipeList = (): JSX.Element => {
     }, [searchText, debouncedSearch]);
 
     // Initialize searchResults when recipes change and not searching
-    useEffect(() => {
-        if (!isSearching && recipes.length > 0) {
-            setSearchResults(recipes);
-        }
-    }, [recipes, isSearching]);
+    // useEffect(() => {
+    //     if (!isSearching) {
+    //         setSearchResults(recipes);
+    //     }
+    // }, [recipes, isSearching]);
 
     // Search handlers
     const handleSearch = (value: string) => {
@@ -348,6 +354,8 @@ const RecipeList = (): JSX.Element => {
                     title={`Bình luận cho: ${currentRecipe.title}`}
                     onCancel={handleCommentsCancel}
                     recipeId={currentRecipe.id}
+                    currentUserId={currentUserId}
+                    isAdmin={isAdmin}
                 />
             )}
         </div>
